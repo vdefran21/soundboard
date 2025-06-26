@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akai MPD2 Soundboard</title>
+    <meta name="description" content="A web-based soundboard application mimicking the Akai MPD2 MIDI pad controller">
+    <meta name="author" content="Soundboard App">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/app.js" as="script">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Akai MPD2 Soundboard">
+    <meta property="og:description" content="A web-based soundboard application mimicking the Akai MPD2 MIDI pad controller">
+    <meta property="og:url" content="/">
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="msapplication-navbutton-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- PWA / Mobile App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MPD2 Soundboard">
+    <meta name="mobile-web-app-capable" content="yes">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <h2>Loading Soundboard...</h2>
+        <p>Initializing audio system and loading sounds</p>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">
+                    <span class="brand">AKAI</span>
+                    <span class="model">MPD2</span>
+                    <span class="subtitle">SOUNDBOARD</span>
+                </h1>
+                <div class="header-controls">
+                    <button id="refresh-btn" class="control-btn" title="Refresh audio files">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">Refresh</span>
+                    </button>
+                    <div class="volume-control">
+                        <label for="master-volume" class="volume-label">Master</label>
+                        <input 
+                            type="range" 
+                            id="master-volume" 
+                            class="volume-slider" 
+                            min="0" 
+                            max="1" 
+                            step="0.01" 
+                            value="0.8"
+                            title="Master Volume"
+                        >
+                        <span id="volume-display" class="volume-display">80%</span>
+                    </div>
+                    <button id="mute-btn" class="control-btn mute-btn" title="Mute all">
+                        <span class="btn-icon">🔊</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">Files:</span>
+                <span id="file-count" class="status-value">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Status:</span>
+                <span id="audio-status" class="status-value">Initializing...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Context:</span>
+                <span id="context-status" class="status-value">Suspended</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Soundboard Grid -->
+            <div class="soundboard-container">
+                <div id="pad-grid" class="pad-grid">
+                    <!-- Pads will be dynamically generated here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    <div class="empty-icon">🎵</div>
+                    <h3>No Audio Files Found</h3>
+                    <p>Add audio files (.wav, .mp3, .ogg) to the <code>/audio</code> directory to get started.</p>
+                    <button id="refresh-empty" class="primary-btn">
+                        <span>🔄</span>
+                        Check for Files
+                    </button>
+                </div>
+            </div>
+
+            <!-- Audio Visualization (placeholder for future enhancement) -->
+            <div class="visualization-container" style="display: none;">
+                <canvas id="audio-visualizer" class="audio-visualizer"></canvas>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <span class="footer-text">Akai MPD2 Soundboard</span>
+                    <span class="footer-version">v1.0.0</span>
+                </div>
+                <div class="footer-section">
+                    <span class="footer-help">Press pads to play sounds • Use number keys 1-9, Q-R, A-F, Z-V</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal" style="display: none;">
+        <div class="modal-content error-modal">
+            <div class="modal-header">
+                <h3>⚠️ Error</h3>
+                <button id="close-error" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="error-message">An error occurred</p>
+            </div>
+            <div class="modal-footer">
+                <button id="error-ok" class="primary-btn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Context Activation Notice -->
+    <div id="audio-notice" class="audio-notice" style="display: none;">
+        <div class="notice-content">
+            <h3>🎵 Activate Audio</h3>
+            <p>Click anywhere to enable audio playback</p>
+            <button id="activate-audio" class="primary-btn">Enable Audio</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js" defer></script>
+    
+    <!-- Service Worker (for future PWA functionality) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Future: Register service worker for offline functionality
+                console.log('Service Worker support detected');
+            });
+        }
+    </script>
+</body>
+</html>
