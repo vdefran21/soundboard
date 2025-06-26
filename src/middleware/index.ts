@@ -2,7 +2,7 @@
  * Express middleware for error handling, logging, and request processing
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { ErrorResponse } from '../models';
 import { getErrorMessage, isError } from '../utils';
 import { appConfig } from '../utils/config';

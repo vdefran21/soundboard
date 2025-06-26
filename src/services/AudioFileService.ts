@@ -2,23 +2,23 @@
  * Audio file service for managing and monitoring audio files
  */
 
+import { FSWatcher, watch } from 'chokidar';
+import { EventEmitter } from 'events';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { watch, FSWatcher } from 'chokidar';
-import { EventEmitter } from 'events';
-import { 
-  AudioFile, 
-  FileSystemChange, 
-  FileSystemEvent, 
-  SupportedAudioFormat 
+import {
+  AudioFile,
+  FileSystemChange,
+  FileSystemEvent,
+  SupportedAudioFormat
 } from '../models';
-import { 
-  isSupportedAudioFormat, 
-  getMimeType, 
-  generateAudioFileId, 
+import {
+  generateAudioFileId,
+  getErrorMessage,
+  getMimeType,
+  isSupportedAudioFormat,
   sanitizeDisplayName,
-  validateFileSize,
-  getErrorMessage
+  validateFileSize
 } from '../utils';
 import { appConfig } from '../utils/config';
 

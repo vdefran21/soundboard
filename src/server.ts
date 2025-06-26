@@ -2,23 +2,23 @@
  * Main server file for the Soundboard application
  */
 
-import express from 'express';
 import compression from 'compression';
+import express from 'express';
 import helmet from 'helmet';
 import * as path from 'path';
-import { AudioFileService } from './services/AudioFileService';
-import { createApiRoutes } from './routes/api';
 import {
-  errorHandler,
-  notFoundHandler,
-  requestLogger,
-  corsHandler,
-  validateJsonPayload,
-  securityHeaders,
-  validateFileSize,
+    corsHandler,
+    errorHandler,
+    notFoundHandler,
+    requestLogger,
+    securityHeaders,
+    validateFileSize,
+    validateJsonPayload,
 } from './middleware';
-import { appConfig, validateConfig, logConfig } from './utils/config';
+import { createApiRoutes } from './routes/api';
+import { AudioFileService } from './services/AudioFileService';
 import { getErrorMessage } from './utils';
+import { appConfig, logConfig, validateConfig } from './utils/config';
 
 /**
  * Soundboard application class

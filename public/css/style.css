@@ -342,11 +342,11 @@ body {
 /* Pad Grid */
 .pad-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* grid-template-columns will be set dynamically by JavaScript */
   gap: var(--spacing-md);
-  max-width: 800px;
+  max-width: 1200px; /* Increased max-width to accommodate more pads */
   margin: 0 auto;
-  aspect-ratio: 1;
+  /* Removed fixed aspect-ratio to allow for dynamic layouts */
 }
 
 /* Individual Pad */
@@ -692,9 +692,7 @@ body {
 }
 
 @media (max-width: 480px) {
-  .pad-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  /* Grid columns will be handled dynamically by JavaScript */
   
   .pad {
     min-height: 100px;

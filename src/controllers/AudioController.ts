@@ -2,9 +2,9 @@
  * Controller for audio-related API endpoints
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { AudioFileService } from '../services/AudioFileService';
+import { NextFunction, Request, Response } from 'express';
 import { ApiResponse, AudioFile, AudioFilesResponse } from '../models';
+import { AudioFileService } from '../services/AudioFileService';
 import { getErrorMessage } from '../utils';
 
 /**
