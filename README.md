@@ -171,16 +171,6 @@ The application provides a RESTful API for managing audio files:
 
 ## Keyboard Shortcuts
 
-The soundboard supports keyboard shortcuts for all pads:
-
-```
-Row 1: 1, 2, 3, 4
-Row 2: Q, W, E, R
-Row 3: A, S, D, F
-Row 4: Z, X, C, V
-```
-
-Additional shortcuts:
 - **Space/Enter**: Activate focused pad
 - **Tab**: Navigate between pads
 
