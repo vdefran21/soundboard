@@ -429,19 +429,6 @@ body {
   opacity: 0.8;
 }
 
-.pad-key {
-  position: absolute;
-  bottom: var(--spacing-xs);
-  right: var(--spacing-xs);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  background: rgba(0, 0, 0, 0.3);
-  padding: 2px 4px;
-  border-radius: var(--radius-sm);
-}
-
 /* Pad Animations */
 @keyframes pulse {
   0% { transform: scale(1); }

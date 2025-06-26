@@ -248,7 +248,6 @@ class SoundboardController {
     private audioManager: AudioManager;
     private audioFiles: AudioFile[] = [];
     private state: SoundboardState;
-    private keyboardMap: Map<string, number> = new Map();
 
     constructor() {
         this.audioManager = new AudioManager();
@@ -299,9 +298,8 @@ class SoundboardController {
             this.audioFiles = data.data;
             this.updateFileCount(data.count || this.audioFiles.length);
             
-            // Initialize pads and keyboard mapping based on actual file count
+            // Initialize pads based on actual file count
             this.initializePads();
-            this.setupKeyboardMapping();
             
             // Initialize audio context but don't preload files yet (requires user interaction)
             await this.audioManager.initialize();
@@ -401,13 +399,11 @@ class SoundboardController {
         pad.tabIndex = 0;
 
         const audioFile = this.audioFiles[index];
-        const keyBinding = this.getKeyForPad(index);
 
         pad.innerHTML = `
             <div class="pad-number">${(index + 1).toString().padStart(2, '0')}</div>
             <div class="pad-name">${audioFile ? audioFile.displayName : 'Empty'}</div>
             <div class="pad-info">${audioFile ? this.formatFileSize(audioFile.size) : ''}</div>
-            <div class="pad-key">${keyBinding}</div>
         `;
 
         if (!audioFile) {
@@ -481,44 +477,6 @@ class SoundboardController {
     }
 
     /**
-     * Sets up keyboard mapping - now supports more than 16 keys
-     */
-    private setupKeyboardMapping(): void {
-        this.keyboardMap.clear();
-        
-        // Extended keyboard mapping for more pads
-        const keys = [
-            // Row 1: Numbers
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-            // Row 2: Top letters
-            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
-            // Row 3: Home row
-            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',
-            // Row 4: Bottom row
-            'z', 'x', 'c', 'v', 'b', 'n', 'm'
-        ];
-        
-        // Map keys to pad indices, but only for existing audio files
-        const maxKeys = Math.min(keys.length, this.audioFiles.length);
-        for (let i = 0; i < maxKeys; i++) {
-            this.keyboardMap.set(keys[i]!.toLowerCase(), i);
-        }
-    }
-
-    /**
-     * Gets the keyboard key for a pad
-     */
-    private getKeyForPad(index: number): string {
-        const keys = [
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-            'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
-            'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
-            'Z', 'X', 'C', 'V', 'B', 'N', 'M'
-        ];
-        return keys[index] || '';
-    }
-
-    /**
      * Sets up volume control
      */
     private setupVolumeControl(): void {
@@ -554,17 +512,6 @@ class SoundboardController {
      * Binds event listeners
      */
     private bindEvents(): void {
-        // Keyboard events
-        document.addEventListener('keydown', (e: KeyboardEvent) => {
-            const key = e.key.toLowerCase();
-            const padIndex = this.keyboardMap.get(key);
-            
-            if (padIndex !== undefined && !e.repeat) {
-                e.preventDefault();
-                this.handlePadClick(padIndex);
-            }
-        });
-
         // Refresh button
         const refreshBtn = document.getElementById('refresh-btn');
         const refreshEmpty = document.getElementById('refresh-empty');
