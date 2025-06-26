@@ -9,3 +9,6 @@ dist/
 *.tar.gz
 coverage/
 .nyc_output/
+audio/*.wav
+audio/*.mp3
+audio/*.ogg
