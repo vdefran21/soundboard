@@ -3,6 +3,8 @@
  */
 
 // Type definitions
+type AppAudioState = 'suspended' | 'running' | 'closed';
+
 interface AudioFile {
     id: string;
     filename: string;
@@ -17,7 +19,6 @@ interface AudioFile {
 interface ApiResponse<T> {
     success: boolean;
     data: T;
-    count?: number;
     message?: string;
 }
 
@@ -31,74 +32,64 @@ interface SoundboardState {
     pads: PadConfig[];
     masterVolume: number;
     muted: boolean;
-    audioContextState: AudioContextState;
+    audioContextState: AppAudioState;
 }
 
 /**
- * Audio Manager class for handling Web Audio API
+ * Audio Manager class for handling audio playback using HTML5 Audio
  */
 class AudioManager {
-    private audioContext: AudioContext | null = null;
-    private audioBuffers: Map<string, AudioBuffer> = new Map();
-    private masterGainNode: GainNode | null = null;
+    private audioElements: Map<string, HTMLAudioElement> = new Map();
     private masterVolume: number = 0.8;
     private muted: boolean = false;
+    private audioContextState: AppAudioState = 'suspended';
 
     /**
-     * Initializes the audio context
+     * Initializes the audio system using HTML5 Audio elements
      */
     async initialize(): Promise<void> {
         try {
-            // @ts-ignore - WebkitAudioContext is for Safari compatibility
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            this.masterGainNode = this.audioContext.createGain();
-            this.masterGainNode.connect(this.audioContext.destination);
-            this.masterGainNode.gain.value = this.masterVolume;
+            // Test if we can create audio elements
+            const testAudio = new Audio();
+            testAudio.volume = 0;
             
-            // Handle audio context state changes
-            this.audioContext.addEventListener('statechange', () => {
-                this.updateAudioContextStatus();
-            });
+            this.audioContextState = 'running';
+            console.log('🎵 Using HTML5 Audio elements for better iOS compatibility');
             
-            this.updateAudioContextStatus();
         } catch (error) {
-            console.error('Failed to initialize audio context:', error);
+            console.error('Failed to initialize audio system:', error);
             throw new Error('Audio initialization failed');
         }
     }
 
     /**
-     * Activates the audio context (required for user interaction)
+     * Activates the audio context (HTML5 Audio doesn't need explicit activation)
      */
     async activateAudioContext(): Promise<void> {
-        if (!this.audioContext) {
-            await this.initialize();
-        }
-        
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
-        
+        this.audioContextState = 'running';
         this.updateAudioContextStatus();
     }
 
     /**
-     * Loads an audio file and stores its buffer
+     * Loads an audio file and creates an HTML5 Audio element
      */
     async loadAudioFile(audioFile: AudioFile): Promise<void> {
-        if (!this.audioContext) {
-            throw new Error('Audio context not initialized');
-        }
-
         try {
-            const response = await fetch(audioFile.url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            const audio = new Audio(audioFile.url);
+            audio.preload = 'auto';
+            audio.volume = this.muted ? 0 : this.masterVolume;
             
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-            this.audioBuffers.set(audioFile.id, audioBuffer);
+            // Wait for the audio to be ready
+            await new Promise<void>((resolve, reject) => {
+                audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+                audio.addEventListener('error', () => reject(new Error(`Failed to load ${audioFile.filename}`)), { once: true });
+                
+                // Timeout after 10 seconds
+                setTimeout(() => reject(new Error(`Timeout loading ${audioFile.filename}`)), 10000);
+            });
+            
+            this.audioElements.set(audioFile.id, audio);
+            
         } catch (error) {
             console.error(`Failed to load audio file ${audioFile.filename}:`, error);
             throw error;
@@ -106,33 +97,34 @@ class AudioManager {
     }
 
     /**
-     * Plays an audio file
+     * Plays an audio file using HTML5 Audio
      */
     async playAudio(audioFileId: string, volume: number = 1.0): Promise<void> {
-        if (!this.audioContext || !this.masterGainNode) {
-            throw new Error('Audio context not initialized');
-        }
-
         if (this.muted) {
             return;
         }
 
-        const audioBuffer = this.audioBuffers.get(audioFileId);
-        if (!audioBuffer) {
-            throw new Error(`Audio buffer not found for ID: ${audioFileId}`);
+        const audio = this.audioElements.get(audioFileId);
+        if (!audio) {
+            throw new Error(`Audio element not found for ID: ${audioFileId}`);
         }
 
         try {
-            const source = this.audioContext.createBufferSource();
-            const gainNode = this.audioContext.createGain();
+            // Reset to beginning and set volume
+            audio.currentTime = 0;
+            audio.volume = Math.min(this.masterVolume * volume, 1.0);
             
-            source.buffer = audioBuffer;
-            gainNode.gain.value = volume;
-            
-            source.connect(gainNode);
-            gainNode.connect(this.masterGainNode);
-            
-            source.start(0);
+            // Play the audio
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                await playPromise;
+            }
+
+            // Trigger haptic feedback on supported devices
+            if ('vibrate' in navigator) {
+                navigator.vibrate(50);
+            }
+
         } catch (error) {
             console.error('Failed to play audio:', error);
             throw error;
@@ -144,9 +136,11 @@ class AudioManager {
      */
     setMasterVolume(volume: number): void {
         this.masterVolume = Math.max(0, Math.min(1, volume));
-        if (this.masterGainNode) {
-            this.masterGainNode.gain.value = this.muted ? 0 : this.masterVolume;
-        }
+        
+        // Update all audio elements
+        this.audioElements.forEach(audio => {
+            audio.volume = this.muted ? 0 : this.masterVolume;
+        });
     }
 
     /**
@@ -161,9 +155,12 @@ class AudioManager {
      */
     toggleMute(): boolean {
         this.muted = !this.muted;
-        if (this.masterGainNode) {
-            this.masterGainNode.gain.value = this.muted ? 0 : this.masterVolume;
-        }
+        
+        // Update all audio elements
+        this.audioElements.forEach(audio => {
+            audio.volume = this.muted ? 0 : this.masterVolume;
+        });
+        
         return this.muted;
     }
 
@@ -177,15 +174,15 @@ class AudioManager {
     /**
      * Gets the audio context state
      */
-    getAudioContextState(): AudioContextState {
-        return this.audioContext?.state || 'closed';
+    getAudioContextState(): AppAudioState {
+        return this.audioContextState;
     }
 
     /**
      * Checks if an audio file is already loaded
      */
     isAudioLoaded(audioFileId: string): boolean {
-        return this.audioBuffers.has(audioFileId);
+        return this.audioElements.has(audioFileId);
     }
 
     /**
@@ -200,7 +197,7 @@ class AudioManager {
         }
         
         if (audioStatusElement) {
-            const isReady = this.audioContext?.state === 'running';
+            const isReady = this.audioContextState === 'running';
             audioStatusElement.textContent = isReady ? 'Ready' : 'Suspended';
         }
     }
@@ -209,11 +206,8 @@ class AudioManager {
      * Preloads all audio files
      */
     async preloadAudioFiles(audioFiles: AudioFile[]): Promise<void> {
-        if (!this.audioContext || this.audioContext.state !== 'running') {
-            console.warn('Audio context not running, skipping preload');
-            return;
-        }
-
+        console.log(`Preloading ${audioFiles.length} audio files...`);
+        
         const loadPromises = audioFiles.map(file => 
             this.loadAudioFile(file).catch(error => {
                 console.warn(`Failed to preload ${file.filename}:`, error);
@@ -226,14 +220,10 @@ class AudioManager {
     }
 
     /**
-     * Preloads all audio files in the background (optional optimization)
+     * Preloads remaining audio files in the background
      */
     async preloadRemainingFiles(audioFiles: AudioFile[]): Promise<void> {
-        if (!this.audioContext || this.audioContext.state !== 'running') {
-            return;
-        }
-
-        const unloadedFiles = audioFiles.filter(file => !this.audioBuffers.has(file.id));
+        const unloadedFiles = audioFiles.filter(file => !this.audioElements.has(file.id));
         if (unloadedFiles.length > 0) {
             console.log(`Background preloading ${unloadedFiles.length} remaining audio files...`);
             await this.preloadAudioFiles(unloadedFiles);
@@ -296,7 +286,7 @@ class SoundboardController {
             }
             
             this.audioFiles = data.data;
-            this.updateFileCount(data.count || this.audioFiles.length);
+            this.updateFileCount(this.audioFiles.length);
             
             // Initialize pads based on actual file count
             this.initializePads();
@@ -536,6 +526,12 @@ class SoundboardController {
             activateAudioBtn.addEventListener('click', () => this.activateAudio());
         }
 
+        // Silent mode warning dismissal
+        const dismissSilentBtn = document.getElementById('dismiss-silent-warning');
+        if (dismissSilentBtn) {
+            dismissSilentBtn.addEventListener('click', () => this.hideSilentModeWarning());
+        }
+
         // Error modal
         const closeErrorBtn = document.getElementById('close-error');
         const errorOkBtn = document.getElementById('error-ok');
@@ -673,6 +669,16 @@ class SoundboardController {
         const audioNotice = document.getElementById('audio-notice');
         if (audioNotice) {
             audioNotice.style.display = 'none';
+        }
+    }
+
+    /**
+     * Hides the silent mode warning
+     */
+    private hideSilentModeWarning(): void {
+        const silentWarning = document.getElementById('silent-mode-warning');
+        if (silentWarning) {
+            silentWarning.style.display = 'none';
         }
     }
 

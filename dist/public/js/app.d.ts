@@ -1,6 +1,7 @@
 /**
  * Frontend TypeScript application for the Akai MPD2 Soundboard
  */
+type AppAudioState = 'suspended' | 'running' | 'closed';
 interface AudioFile {
     id: string;
     filename: string;
@@ -14,7 +15,6 @@ interface AudioFile {
 interface ApiResponse<T> {
     success: boolean;
     data: T;
-    count?: number;
     message?: string;
 }
 interface PadConfig {
@@ -26,31 +26,30 @@ interface SoundboardState {
     pads: PadConfig[];
     masterVolume: number;
     muted: boolean;
-    audioContextState: AudioContextState;
+    audioContextState: AppAudioState;
 }
 /**
- * Audio Manager class for handling Web Audio API
+ * Audio Manager class for handling audio playback using HTML5 Audio
  */
 declare class AudioManager {
-    private audioContext;
-    private audioBuffers;
-    private masterGainNode;
+    private audioElements;
     private masterVolume;
     private muted;
+    private audioContextState;
     /**
-     * Initializes the audio context
+     * Initializes the audio system using HTML5 Audio elements
      */
     initialize(): Promise<void>;
     /**
-     * Activates the audio context (required for user interaction)
+     * Activates the audio context (HTML5 Audio doesn't need explicit activation)
      */
     activateAudioContext(): Promise<void>;
     /**
-     * Loads an audio file and stores its buffer
+     * Loads an audio file and creates an HTML5 Audio element
      */
     loadAudioFile(audioFile: AudioFile): Promise<void>;
     /**
-     * Plays an audio file
+     * Plays an audio file using HTML5 Audio
      */
     playAudio(audioFileId: string, volume?: number): Promise<void>;
     /**
@@ -72,7 +71,7 @@ declare class AudioManager {
     /**
      * Gets the audio context state
      */
-    getAudioContextState(): AudioContextState;
+    getAudioContextState(): AppAudioState;
     /**
      * Checks if an audio file is already loaded
      */
@@ -86,7 +85,7 @@ declare class AudioManager {
      */
     preloadAudioFiles(audioFiles: AudioFile[]): Promise<void>;
     /**
-     * Preloads all audio files in the background (optional optimization)
+     * Preloads remaining audio files in the background
      */
     preloadRemainingFiles(audioFiles: AudioFile[]): Promise<void>;
 }
@@ -178,6 +177,10 @@ declare class SoundboardController {
      * Hides the audio notice
      */
     private hideAudioNotice;
+    /**
+     * Hides the silent mode warning
+     */
+    private hideSilentModeWarning;
     /**
      * Shows an error message
      */

@@ -631,6 +631,15 @@ body {
   margin-bottom: var(--spacing-lg);
 }
 
+.notice-content ul {
+  color: var(--color-text-secondary);
+  padding-left: var(--spacing-lg);
+}
+
+.notice-content li {
+  margin-bottom: var(--spacing-xs);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .header-content {

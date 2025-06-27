@@ -282,6 +282,27 @@ For large audio libraries:
 - Use compressed audio formats (MP3, OGG)
 - Disable file watching in production if not needed
 
+## Browser Compatibility and Audio
+
+### iOS Silent Mode Compatibility
+
+**Fixed**: This soundboard now works properly on iOS devices even when Silent Mode is enabled! 
+
+**How**: The application uses HTML5 Audio elements instead of Web Audio API, which allows it to behave like media applications (YouTube, Instagram, etc.) that respect system media settings rather than the Silent Mode switch.
+
+**Features**:
+- ✅ Plays audio through built-in speakers even in Silent Mode
+- ✅ Integrates with iOS media controls
+- ✅ Works with volume buttons and Control Center
+- ✅ Supports background audio playback
+- ✅ Haptic feedback provides additional tactile response
+
+### Other Considerations
+
+- **Chrome Mobile**: Requires user interaction before audio can play (handled automatically)
+- **Large Audio Files**: May cause slower loading on mobile connections  
+- **File Limit**: While there's no hard limit, very large numbers of files (500+) may impact performance
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -290,7 +311,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Inspired by the Akai MPD2 MIDI controller
 - Built with modern web technologies
-- Uses Web Audio API for low-latency audio
+- Uses HTML5 Audio for maximum compatibility and iOS support
 
 ## Support
 
