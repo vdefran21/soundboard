@@ -1,3 +1,4 @@
+```
 # Soundboard Web Application Development Request
 
 ## Context
@@ -169,3 +170,5 @@ You are tasked with creating a complete Node.js TypeScript web application from 
 ---
 
 Please create a complete, functional soundboard web application that meets all the specified requirements, with emphasis on clean TypeScript implementation, modern web development practices, and an authentic hardware-inspired user interface.
+
+```

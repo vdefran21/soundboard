@@ -36,20 +36,31 @@ declare class AudioManager {
     private masterVolume;
     private muted;
     private audioContextState;
+    private userInteracted;
+    private isMobile;
+    constructor();
+    /**
+     * Sets up detection for user interaction (required for Chrome mobile)
+     */
+    private setupUserInteractionDetection;
     /**
      * Initializes the audio system using HTML5 Audio elements
      */
     initialize(): Promise<void>;
     /**
-     * Activates the audio context (HTML5 Audio doesn't need explicit activation)
+     * Activates the audio context (enhanced for Chrome mobile compatibility)
      */
     activateAudioContext(): Promise<void>;
     /**
-     * Loads an audio file and creates an HTML5 Audio element
+     * Unlocks audio for mobile browsers (especially Chrome mobile)
+     */
+    private unlockAudioForMobile;
+    /**
+     * Loads an audio file and creates an HTML5 Audio element (enhanced for Chrome mobile)
      */
     loadAudioFile(audioFile: AudioFile): Promise<void>;
     /**
-     * Plays an audio file using HTML5 Audio
+     * Plays an audio file using HTML5 Audio (enhanced for Chrome mobile)
      */
     playAudio(audioFileId: string, volume?: number): Promise<void>;
     /**

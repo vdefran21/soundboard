@@ -11,6 +11,28 @@ class AudioManager {
         this.masterVolume = 0.8;
         this.muted = false;
         this.audioContextState = 'suspended';
+        this.userInteracted = false;
+        this.isMobile = false;
+        // Detect mobile browsers (including Chrome mobile)
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+            !!(navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        // Listen for first user interaction
+        this.setupUserInteractionDetection();
+    }
+    /**
+     * Sets up detection for user interaction (required for Chrome mobile)
+     */
+    setupUserInteractionDetection() {
+        const markUserInteraction = () => {
+            this.userInteracted = true;
+            // Remove listeners after first interaction
+            document.removeEventListener('touchstart', markUserInteraction);
+            document.removeEventListener('click', markUserInteraction);
+            document.removeEventListener('keydown', markUserInteraction);
+        };
+        document.addEventListener('touchstart', markUserInteraction, { once: true, passive: true });
+        document.addEventListener('click', markUserInteraction, { once: true });
+        document.addEventListener('keydown', markUserInteraction, { once: true });
     }
     /**
      * Initializes the audio system using HTML5 Audio elements
@@ -29,26 +51,89 @@ class AudioManager {
         }
     }
     /**
-     * Activates the audio context (HTML5 Audio doesn't need explicit activation)
+     * Activates the audio context (enhanced for Chrome mobile compatibility)
      */
     async activateAudioContext() {
         this.audioContextState = 'running';
+        this.userInteracted = true;
+        // For Chrome mobile, we need to trigger a test audio play to "unlock" audio
+        if (this.isMobile) {
+            await this.unlockAudioForMobile();
+        }
         this.updateAudioContextStatus();
     }
     /**
-     * Loads an audio file and creates an HTML5 Audio element
+     * Unlocks audio for mobile browsers (especially Chrome mobile)
+     */
+    async unlockAudioForMobile() {
+        try {
+            // Create a silent audio element and play it to unlock audio
+            const unlockAudio = new Audio();
+            unlockAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAABAAEAf/8AAA==';
+            unlockAudio.volume = 0.1;
+            unlockAudio.muted = false;
+            // Try to play the unlock audio
+            const playPromise = unlockAudio.play();
+            if (playPromise !== undefined) {
+                await playPromise.catch(() => {
+                    // Ignore play errors for unlock audio
+                    console.warn('Audio unlock failed, but continuing...');
+                });
+            }
+            // Clean up
+            unlockAudio.pause();
+            unlockAudio.src = '';
+            console.log('🔓 Audio unlocked for mobile browser');
+        }
+        catch (error) {
+            console.warn('Failed to unlock audio for mobile:', error);
+        }
+    }
+    /**
+     * Loads an audio file and creates an HTML5 Audio element (enhanced for Chrome mobile)
      */
     async loadAudioFile(audioFile) {
         try {
-            const audio = new Audio(audioFile.url);
-            audio.preload = 'auto';
+            const audio = new Audio();
+            // Configure for mobile compatibility
+            if (this.isMobile) {
+                audio.preload = 'metadata'; // Use metadata instead of auto for mobile
+                audio.crossOrigin = 'anonymous';
+            }
+            else {
+                audio.preload = 'auto';
+            }
             audio.volume = this.muted ? 0 : this.masterVolume;
+            audio.src = audioFile.url;
             // Wait for the audio to be ready
             await new Promise((resolve, reject) => {
-                audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-                audio.addEventListener('error', () => reject(new Error(`Failed to load ${audioFile.filename}`)), { once: true });
+                const handleReady = () => {
+                    audio.removeEventListener('canplaythrough', handleReady);
+                    audio.removeEventListener('loadedmetadata', handleReady);
+                    audio.removeEventListener('error', handleError);
+                    resolve();
+                };
+                const handleError = () => {
+                    audio.removeEventListener('canplaythrough', handleReady);
+                    audio.removeEventListener('loadedmetadata', handleReady);
+                    audio.removeEventListener('error', handleError);
+                    reject(new Error(`Failed to load ${audioFile.filename}`));
+                };
+                // For mobile, we only need metadata loaded
+                if (this.isMobile) {
+                    audio.addEventListener('loadedmetadata', handleReady, { once: true });
+                }
+                else {
+                    audio.addEventListener('canplaythrough', handleReady, { once: true });
+                }
+                audio.addEventListener('error', handleError, { once: true });
                 // Timeout after 10 seconds
-                setTimeout(() => reject(new Error(`Timeout loading ${audioFile.filename}`)), 10000);
+                setTimeout(() => {
+                    audio.removeEventListener('canplaythrough', handleReady);
+                    audio.removeEventListener('loadedmetadata', handleReady);
+                    audio.removeEventListener('error', handleError);
+                    reject(new Error(`Timeout loading ${audioFile.filename}`));
+                }, 10000);
             });
             this.audioElements.set(audioFile.id, audio);
         }
@@ -58,27 +143,65 @@ class AudioManager {
         }
     }
     /**
-     * Plays an audio file using HTML5 Audio
+     * Plays an audio file using HTML5 Audio (enhanced for Chrome mobile)
      */
     async playAudio(audioFileId, volume = 1.0) {
         if (this.muted) {
             return;
+        }
+        // Ensure user has interacted for Chrome mobile
+        if (this.isMobile && !this.userInteracted) {
+            throw new Error('User interaction required for mobile audio playback');
         }
         const audio = this.audioElements.get(audioFileId);
         if (!audio) {
             throw new Error(`Audio element not found for ID: ${audioFileId}`);
         }
         try {
+            // For Chrome mobile, ensure the audio is properly loaded
+            if (this.isMobile && audio.readyState < 2) {
+                // Force load the audio
+                audio.load();
+                await new Promise((resolve, reject) => {
+                    const handleCanPlay = () => {
+                        audio.removeEventListener('canplay', handleCanPlay);
+                        audio.removeEventListener('error', handleError);
+                        resolve();
+                    };
+                    const handleError = () => {
+                        audio.removeEventListener('canplay', handleCanPlay);
+                        audio.removeEventListener('error', handleError);
+                        reject(new Error('Failed to load audio for playback'));
+                    };
+                    audio.addEventListener('canplay', handleCanPlay, { once: true });
+                    audio.addEventListener('error', handleError, { once: true });
+                    // Timeout after 3 seconds
+                    setTimeout(() => {
+                        audio.removeEventListener('canplay', handleCanPlay);
+                        audio.removeEventListener('error', handleError);
+                        reject(new Error('Audio load timeout'));
+                    }, 3000);
+                });
+            }
             // Reset to beginning and set volume
             audio.currentTime = 0;
             audio.volume = Math.min(this.masterVolume * volume, 1.0);
-            // Play the audio
+            // Ensure audio is not muted
+            audio.muted = false;
+            // Play the audio with enhanced error handling for mobile
             const playPromise = audio.play();
             if (playPromise !== undefined) {
-                await playPromise;
+                await playPromise.catch((playError) => {
+                    console.error('Play failed:', playError);
+                    // For Chrome mobile, try one more time after a brief delay
+                    if (this.isMobile && playError.name === 'NotAllowedError') {
+                        throw new Error('Audio play not allowed - ensure user interaction occurred');
+                    }
+                    throw playError;
+                });
             }
             // Trigger haptic feedback on supported devices
-            if ('vibrate' in navigator) {
+            if ('vibrate' in navigator && this.isMobile) {
                 navigator.vibrate(50);
             }
         }

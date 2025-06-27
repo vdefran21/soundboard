@@ -39,7 +39,22 @@ A web-based soundboard application that mimics the appearance and functionality 
 - Node.js (v18 or higher)
 - npm (v8 or higher)
 
-### Installation
+#### Testing on Chrome Mobile
+
+To test the enhanced Chrome mobile compatibility:
+
+1. **Open Chrome on Android/iOS** and navigate to your soundboard
+2. **Tap any pad** - the first tap will unlock audio and you should see "🔓 Audio unlocked for mobile browser" in the console
+3. **Subsequent taps** should play audio immediately
+4. **Check Developer Tools** (Chrome Android) by connecting to `chrome://inspect` on desktop
+
+**Troubleshooting Chrome Mobile**:
+- Ensure you're testing on actual mobile devices, not desktop browser DevTools mobile simulation
+- Check that the device volume is up and not muted
+- Verify network connectivity for audio file loading
+- Look for console errors that might indicate loading issues
+
+## Installation
 
 1. **Clone the repository**
    ```bash
@@ -284,24 +299,38 @@ For large audio libraries:
 
 ## Browser Compatibility and Audio
 
-### iOS Silent Mode Compatibility
+### Mobile Browser Compatibility
 
-**Fixed**: This soundboard now works properly on iOS devices even when Silent Mode is enabled! 
+**Enhanced Support**: This soundboard now provides excellent compatibility across all major mobile browsers!
 
-**How**: The application uses HTML5 Audio elements instead of Web Audio API, which allows it to behave like media applications (YouTube, Instagram, etc.) that respect system media settings rather than the Silent Mode switch.
-
-**Features**:
+#### iOS Safari
 - ✅ Plays audio through built-in speakers even in Silent Mode
 - ✅ Integrates with iOS media controls
 - ✅ Works with volume buttons and Control Center
 - ✅ Supports background audio playback
-- ✅ Haptic feedback provides additional tactile response
+
+#### Chrome Mobile (Android & iOS)
+- ✅ Automatic audio unlocking after first user interaction
+- ✅ Optimized loading strategy for mobile connections
+- ✅ Enhanced error handling for autoplay restrictions
+- ✅ Fallback mechanisms for audio playback
+
+#### Other Mobile Browsers
+- ✅ Firefox Mobile, Samsung Internet, Edge Mobile
+- ✅ Progressive enhancement for touch interfaces
+- ✅ Haptic feedback on supported devices
+
+**Technical Implementation**:
+- Uses HTML5 Audio elements for maximum compatibility
+- Implements mobile-specific audio unlocking techniques
+- Detects and adapts to different mobile browser behaviors
+- Provides graceful fallbacks for restricted environments
 
 ### Other Considerations
 
-- **Chrome Mobile**: Requires user interaction before audio can play (handled automatically)
-- **Large Audio Files**: May cause slower loading on mobile connections  
-- **File Limit**: While there's no hard limit, very large numbers of files (500+) may impact performance
+- **First Interaction Required**: All mobile browsers require a user tap/touch before audio can play (handled automatically)
+- **Large Audio Files**: May cause slower loading on mobile connections
+- **File Limit**: While there's no hard limit, very large numbers of files (500+) may impact performance on mobile devices
 
 ## License
 
