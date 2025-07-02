@@ -200,6 +200,10 @@ declare class SoundboardController {
      * Hides the error message
      */
     private hideError;
+    /**
+     * Updates initial status displays
+     */
+    private updateInitialStatus;
 }
 /**
  * Application initialization

@@ -81,11 +81,17 @@ class AudioManager {
             const testAudio = new Audio();
             testAudio.volume = 0;
             
-            this.audioContextState = 'running';
+            // For HTML5 Audio, we don't immediately set to running - 
+            // we wait for user interaction
             console.log('🎵 Using HTML5 Audio elements for better iOS compatibility');
+            
+            // Update status to show initialized but suspended
+            this.updateAudioContextStatus();
             
         } catch (error) {
             console.error('Failed to initialize audio system:', error);
+            this.audioContextState = 'closed';
+            this.updateAudioContextStatus();
             throw new Error('Audio initialization failed');
         }
     }
@@ -402,6 +408,9 @@ class SoundboardController {
             await this.setupUI();
             this.hideLoadingScreen();
             
+            // Update initial status
+            this.updateInitialStatus();
+            
             // Show audio activation notice if needed
             if (this.audioManager.getAudioContextState() === 'suspended') {
                 this.showAudioNotice();
@@ -434,8 +443,11 @@ class SoundboardController {
             // Initialize pads based on actual file count
             this.initializePads();
             
-            // Initialize audio context but don't preload files yet (requires user interaction)
+            // Initialize audio manager
             await this.audioManager.initialize();
+            
+            // Update audio manager state in our local state
+            this.state.audioContextState = this.audioManager.getAudioContextState();
             
         } catch (error) {
             console.error('Failed to load audio files:', error);
@@ -570,6 +582,10 @@ class SoundboardController {
             if (this.audioManager.getAudioContextState() === 'suspended') {
                 await this.audioManager.activateAudioContext();
                 this.hideAudioNotice();
+                
+                // Update local state and UI
+                this.state.audioContextState = this.audioManager.getAudioContextState();
+                this.updateInitialStatus();
                 
                 // Start background preloading after first activation
                 this.audioManager.preloadRemainingFiles(this.audioFiles).catch(error => {
@@ -743,6 +759,10 @@ class SoundboardController {
             await this.audioManager.activateAudioContext();
             this.hideAudioNotice();
             
+            // Update local state and UI
+            this.state.audioContextState = this.audioManager.getAudioContextState();
+            this.updateInitialStatus();
+            
             // Start background preloading after activation
             this.audioManager.preloadRemainingFiles(this.audioFiles).catch(error => {
                 console.warn('Background preloading failed:', error);
@@ -846,6 +866,30 @@ class SoundboardController {
         if (errorModal) {
             errorModal.style.display = 'none';
         }
+    }
+
+    /**
+     * Updates initial status displays
+     */
+    private updateInitialStatus(): void {
+        // Update file count
+        this.updateFileCount(this.audioFiles.length);
+        
+        // Update audio status based on current state
+        const audioStatusElement = document.getElementById('audio-status');
+        const contextStatusElement = document.getElementById('context-status');
+        
+        if (audioStatusElement) {
+            const audioState = this.audioManager.getAudioContextState();
+            audioStatusElement.textContent = audioState === 'running' ? 'Ready' : 'Suspended';
+        }
+        
+        if (contextStatusElement) {
+            contextStatusElement.textContent = this.audioManager.getAudioContextState();
+        }
+        
+        // Update the state object
+        this.state.audioContextState = this.audioManager.getAudioContextState();
     }
 }
 
